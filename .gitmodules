@@ -1,0 +1,3 @@
+[submodule "solstice-audio-test"]
+	path = solstice-audio-test
+	url = https://github.com/gwillen/solstice-audio-test
