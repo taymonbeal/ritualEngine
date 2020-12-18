@@ -203,7 +203,7 @@
              color:grey;
          }
          #mute-buttons {
-             width: 14em;
+             width: 28em;
          }
          #widget-extra-ctrls {
              height:100%;
@@ -440,6 +440,7 @@
                 <div id="mute-buttons">
                     <input type="button" id="mic-mute-button" class="footer-button" value="Mute Mic">
                     <input type="button" id="speaker-mute-button" class="footer-button" value="Mute Speaker">
+                    <input type="button" id="disable-twilio-button" class="footer-button" value="Disconnect from Video Chat">
                 </div>
                 <div id="widget-extra-ctrls"></div>
                 <div id="right-side-ctrls">
@@ -469,6 +470,11 @@
                lib.persistParameter('speakerMuted', speakerMuted, {clearable: false});
                $('#speaker-mute-button').val(speakerMuted ? 'Unmute speaker' : 'Mute speaker');
            });
+           $('#disable-twilio-button').val(lib.retrieveParameter('disableTwilio') ? 'Connect to video chat' : 'Disconnect from video chat').on('click', () => {
+               let disableTwilio = !lib.retrieveParameter('disableTwilio');
+               lib.persistParameter('disableTwilio', disableTwilio, {clearable: false});
+               $('#disable-twilio-button').val(disableTwilio ? 'Connect to video chat' : 'Disconnect from video chat');
+           });
            if (!lib.haveClearableParameters()) {
                 $('#delete-cached-button').prop('disabled', true).addClass('footer-button-disabled');
            }
@@ -490,6 +496,7 @@
          var widgetClasses = {};
 
          libPromise.then(async (lib) => {
+            await initPromise;
             while (true) {
                 let url = new URL('status', location);
                 url.searchParams.append('clientId', clientId);
@@ -512,9 +519,9 @@
                      }
                      if (data.video_token && data.room && page!='welcome') {
                          await initPromise;
-                         let { twilioConnect, setTwilioAudioEnabled } = await import ('../avatars.js');
+                         let { setTwilioAudioEnabled, setTwilioData } = await import ('../avatars.js');
                          console.log(data.clients)
-                         await twilioConnect(data.video_token, data.room);
+                         await setTwilioData(data.video_token, data.room);
                          if (data.twilioAudioEnabled !== undefined) {
                              setTwilioAudioEnabled(data.twilioAudioEnabled);
                          }

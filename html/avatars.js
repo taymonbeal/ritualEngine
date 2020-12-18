@@ -458,12 +458,26 @@ function putVideoInCircle(circle, track, id) {
     }
 }
 
+export function getCurrentRoomId() {
+    return currentRoomId;
+}
 
-export async function twilioConnect(token, roomId) {
-    if (window.location.search.indexOf('notwilio') != -1) return;
-    if (roomId == currentRoomId) return;
-    if (room) room.disconnect();
+let currentToken = null;
+
+export async function setTwilioData(token, roomId) {
+    if (roomId === currentRoomId) {
+        return;
+    }
+    currentToken = token;
     currentRoomId = roomId;
+    if (!retrieveParameter('disableTwilio')) {
+        await twilioConnect();
+    }
+}
+
+async function twilioConnect() {
+    $('#disable-twilio-button').prop('disabled', true);
+    if (room) room.disconnect();
     console.log({cameraChoice});
     if (cameraChoice[0] && ! localVideo) {
         let opts = { width: 100, height: 100};
@@ -498,15 +512,16 @@ export async function twilioConnect(token, roomId) {
     tracks = tracks.filter((x)=>(x));
     
     try {
-        room = await Twilio.Video.connect(token, { name: roomId, tracks });
+        room = await Twilio.Video.connect(currentToken, { name: currentRoomId, tracks });
     } catch (error) {
         room = null;
         currentRoomId = null;
         console.log(error);
         wrappedFetch('twilioRoomFail/'+clientId, {method: 'POST'});
+        $('#disable-twilio-button').prop('disabled', false);
         return;
     }
-    console.log('connected to room '+roomId);
+    console.log('connected to room '+currentRoomId);
     addEventListener('beforeunload', () => {
         room.disconnect();
     });
@@ -542,6 +557,27 @@ export async function twilioConnect(token, roomId) {
         }
     });
     attachAllVideos();
+    $('#disable-twilio-button').prop('disabled', false);
+}
+
+async function twilioDisconnect() {
+    $('#disable-twilio-button').prop('disabled', true);
+    if (room) {
+        room.disconnect();
+        room = null;
+    }
+    currentRoomId = null;
+    if (localVideo) {
+        localVideo.stop();
+        localVideo = null;
+    }
+    if (localAudioTrack) {
+        localAudioTrack.stop();
+        localAudioTrack = null;
+    }
+    await wrappedFetch('clientAvatar/'+clientId, {method: 'DELETE'});
+    detachAllVideos();
+    $('#disable-twilio-button').prop('disabled', false);
 }
 
 $('#mic-mute-button').on('click', () => {
@@ -561,6 +597,14 @@ $('#speaker-mute-button').on('click', () => {
         } else {
             unmuteSpeaker();
         }
+    }
+});
+
+$('#disable-twilio-button').on('click', () => {
+    if (retrieveParameter('disableTwilio')) {
+        twilioDisconnect();
+    } else if (currentRoomId) {
+        twilioConnect();
     }
 });
 

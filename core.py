@@ -58,14 +58,11 @@ except KeyError:
             addEventListener('error', (event) => {
                 event.preventDefault();
                 // Not using jQuery here since it may not have loaded yet.
-                let errDiv = document.createElement('div');
-                errDiv.classList.add('error');
-                errDiv.innerHTML = `
+                document.documentElement.innerHTML = `
                     <h1>This app has crashed. We're really sorry :-(</h1>
                     <h2>Please <a href="https://github.com/dspeyer/ritualEngine/issues/new">file a bug</a> with the following information; it will help us fix it.</h2>
                     <textarea readonly></textarea>
                     <h2>Then refresh the page and try again.</h2>`;
-                document.body.appendChild(errDiv);
                 let {name, message, stack} = event.error ?? {};
                 document.querySelector('textarea').textContent = stack ?? `${name}: ${message}`;
             });
